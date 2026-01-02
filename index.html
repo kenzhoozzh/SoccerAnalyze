@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Stripe Compliance & SEO -->
+    <title>SystemBetLab | Sports Data & Performance Analysis</title>
+    <meta name="description" content="SystemBetLab provides data analysis tools and software solutions for sports performance and event evaluation. Premium insights for disciplined investors." />
+    
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:title" content="SystemBetLab - Sports Data Analysis" />
+    <meta property="og:description" content="Professional sports data analysis and performance evaluation tools." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SystemBetLab" />
+
+    <!-- Tailwind CSS (CDN for simplicity in this setup, though build process usually handles this) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              swiss: {
+                red: '#FF0000',
+                dark: '#0B1120',
+                surface: '#151F32',
+                accent: '#3B82F6', // Blue 500
+                success: '#10B981',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Inter', sans-serif; background-color: #0B1120; color: white; }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #0B1120; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
