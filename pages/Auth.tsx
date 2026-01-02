@@ -47,14 +47,13 @@ const Auth = () => {
              return;
         }
 
-        const success = registerUser(email, password);
-        if (success) {
-            // Auto-login after registration
-            const user = validateUser(email, password);
-            if (user) {
-                login(user);
-                navigate('/dashboard');
-            }
+        // Fix: registerUser now returns the user object directly.
+        // We use this object to login immediately without waiting for React State updates.
+        const newUser = registerUser(email, password);
+        
+        if (newUser) {
+            login(newUser);
+            navigate('/dashboard');
         } else {
             setError('This email is already registered. Please log in.');
             setIsLoading(false);

@@ -96,8 +96,6 @@ const Admin = () => {
                 )}
             </button>
          </div>
-         
-         {/* Bot Simulation Button Removed */}
       </div>
 
       {view === 'DASHBOARD' ? (

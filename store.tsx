@@ -12,7 +12,7 @@ interface AppState {
   login: (user: User) => void; 
   logout: () => void;
   validateUser: (email: string, password: string) => User | null;
-  registerUser: (email: string, password: string) => boolean;
+  registerUser: (email: string, password: string) => User | null; // Changed return type
   // Actions
   buyCredit: () => Promise<void>;
   handlePaymentSuccess: () => void;
@@ -83,9 +83,9 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     return null;
   };
 
-  const registerUser = (email: string, pass: string): boolean => {
+  const registerUser = (email: string, pass: string): User | null => {
       if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return false; // Email exists
+          return null; // Email exists
       }
       const newUser: User = {
           id: `user-${Date.now()}`,
@@ -109,7 +109,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       };
       setRequests(prev => [...prev, welcomeMsg]);
       
-      return true;
+      return newUser;
   };
 
   const login = (user: User) => {
