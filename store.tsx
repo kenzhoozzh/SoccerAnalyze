@@ -76,7 +76,8 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   }, [currentUser]);
 
   const validateUser = (email: string, pass: string): User | null => {
-    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const cleanEmail = email.trim().toLowerCase();
+    const user = allUsers.find(u => u.email.toLowerCase() === cleanEmail);
     if (user && user.password === pass) {
         return user;
     }
@@ -84,13 +85,14 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   };
 
   const registerUser = (email: string, pass: string): User | null => {
-      if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (allUsers.find(u => u.email.toLowerCase() === cleanEmail)) {
           return null; // Email exists
       }
       const newUser: User = {
           id: `user-${Date.now()}`,
-          email,
-          name: email.split('@')[0],
+          email: cleanEmail,
+          name: cleanEmail.split('@')[0],
           role: UserRole.USER,
           credits: 0,
           password: pass
@@ -101,7 +103,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       const welcomeMsg: TipRequest = {
         id: `welcome-${Date.now()}`,
         userId: newUser.id,
-        userEmail: email,
+        userEmail: cleanEmail,
         status: RequestStatus.CHAT,
         createdAt: new Date().toISOString(),
         userMessage: "Hallo! 👋 Danke für dein Interesse an TipCredit. Ich melde mich so schnell wie möglich bei dir. Wenn du Fragen hast oder direkt starten möchtest, schreib mir einfach hier.",

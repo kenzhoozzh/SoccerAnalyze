@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../store';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -22,40 +22,48 @@ const Auth = () => {
       setError(null);
   };
 
+  const handleReset = () => {
+      if(confirm('Möchtest du wirklich alle lokalen Daten (Benutzer, Chats) löschen und die App zurücksetzen?')) {
+          localStorage.clear();
+          window.location.reload();
+      }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
+    const cleanEmail = email.trim();
+    const cleanPassword = password; // Don't trim password
+
     // Realistic processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     if (mode === 'login') {
-        const user = validateUser(email, password);
+        const user = validateUser(cleanEmail, cleanPassword);
         if (user) {
             login(user);
             navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard');
         } else {
-            setError('Invalid email or password. Please try again.');
+            setError('Ungültige E-Mail oder Passwort.');
             setIsLoading(false);
         }
     } else {
-        // Register Flow - Direct Access
-        if (!email.includes('@') || password.length < 6) {
-             setError('Please enter a valid email and a password with at least 6 characters.');
+        // Register Flow
+        if (!cleanEmail.includes('@') || cleanPassword.length < 6) {
+             setError('Bitte gib eine gültige E-Mail und ein Passwort mit mind. 6 Zeichen ein.');
              setIsLoading(false);
              return;
         }
 
-        // Fix: registerUser now returns the user object directly.
-        // We use this object to login immediately without waiting for React State updates.
-        const newUser = registerUser(email, password);
+        const newUser = registerUser(cleanEmail, cleanPassword);
         
         if (newUser) {
             login(newUser);
             navigate('/dashboard');
         } else {
-            setError('This email is already registered. Please log in.');
+            setError('Diese E-Mail ist bereits registriert. Bitte logge dich ein.');
             setIsLoading(false);
         }
     }
@@ -67,12 +75,12 @@ const Auth = () => {
         
         <div className="text-center mb-8 mt-2">
           <h2 className="text-2xl font-bold text-white mb-2">
-            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+            {mode === 'login' ? 'Willkommen zurück' : 'Konto erstellen'}
           </h2>
           <p className="text-gray-400 text-sm">
             {mode === 'login' 
-              ? 'Enter your credentials to access your dashboard.' 
-              : 'Join the premier sports insight platform.'}
+              ? 'Melde dich an, um auf dein Dashboard zuzugreifen.' 
+              : 'Werde Teil der Premium Sport-Community.'}
           </p>
         </div>
 
@@ -85,7 +93,7 @@ const Auth = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-            <label className="block text-xs font-medium text-gray-400 uppercase mb-1">Email Address</label>
+            <label className="block text-xs font-medium text-gray-400 uppercase mb-1">E-Mail Adresse</label>
             <input 
             type="email" 
             required
@@ -97,7 +105,7 @@ const Auth = () => {
         </div>
 
         <div>
-            <label className="block text-xs font-medium text-gray-400 uppercase mb-1">Password</label>
+            <label className="block text-xs font-medium text-gray-400 uppercase mb-1">Passwort</label>
             <input 
             type="password" 
             required
@@ -113,7 +121,7 @@ const Auth = () => {
             <div className="flex items-start space-x-2">
                 <input type="checkbox" required id="18plus" className="mt-1" />
                 <label htmlFor="18plus" className="text-xs text-gray-500">
-                    I confirm I am over 18 years of age and acknowledge that sports tipping involves financial risk.
+                    Ich bestätige, dass ich über 18 Jahre alt bin und akzeptiere das finanzielle Risiko von Sportwetten.
                 </label>
             </div>
         )}
@@ -123,26 +131,33 @@ const Auth = () => {
             disabled={isLoading}
             className="w-full bg-swiss-accent hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : (mode === 'login' ? 'Log In' : 'Create Account')}
+            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : (mode === 'login' ? 'Einloggen' : 'Konto erstellen')}
         </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500 border-t border-gray-800 pt-4">
           {mode === 'login' ? (
             <p>
-              Don't have an account?{' '}
+              Noch kein Konto?{' '}
               <button onClick={() => switchMode('register')} className="text-swiss-accent hover:underline">
-                Sign up
+                Registrieren
               </button>
             </p>
           ) : (
             <p>
-              Already have an account?{' '}
+              Bereits registriert?{' '}
               <button onClick={() => switchMode('login')} className="text-swiss-accent hover:underline">
-                Log in
+                Einloggen
               </button>
             </p>
           )}
+          
+          <div className="mt-8 pt-4 border-t border-gray-800/50">
+            <button onClick={handleReset} className="text-xs text-red-900/50 hover:text-red-500 flex items-center justify-center w-full gap-1 transition-colors">
+                <RefreshCw className="w-3 h-3" />
+                <span>App zurücksetzen (Lokale Daten löschen)</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
