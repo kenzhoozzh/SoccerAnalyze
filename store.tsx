@@ -8,10 +8,14 @@ interface AppState {
   allUsers: User[]; // Admin needs to see all users to check credits
   requests: TipRequest[];
   transactions: Transaction[];
-  login: (email: string, role?: UserRole) => void;
+  // Auth Methods
+  login: (user: User) => void; 
   logout: () => void;
+  validateUser: (email: string, password: string) => User | null;
+  registerUser: (email: string, password: string) => boolean;
+  // Actions
   buyCredit: () => Promise<void>;
-  handlePaymentSuccess: () => void; // New function to verify payment
+  handlePaymentSuccess: () => void;
   sendUserMessage: (message: string, isPaidRequest: boolean) => Promise<void>;
   sendSystemResponse: (message: string) => void; 
   // Admin Actions
@@ -23,37 +27,46 @@ interface AppState {
 const AppContext = createContext<AppState | undefined>(undefined);
 
 // --- Seed Data ---
-
-// Mock Users DB for Admin visibility
+// Real Users DB (starting with just Admin)
 const INITIAL_USERS: User[] = [
-  { id: 'user-1', email: 'client@example.com', name: 'client', role: UserRole.USER, credits: 0 },
-  { id: 'user-2', email: 'vip@example.com', name: 'vip', role: UserRole.USER, credits: 5 },
+  { id: 'admin-1', email: 'Kenan.akcay@yahoo.com', name: 'Admin', role: UserRole.ADMIN, credits: 999, password: 'naqhic-2jyzpy-wuntuQ' },
 ];
 
-const INITIAL_REQUESTS: TipRequest[] = [];
+// Helper to load/save from localStorage
+const loadFromStorage = <T,>(key: string, fallback: T): T => {
+    const stored = localStorage.getItem(key);
+    if (stored) return JSON.parse(stored);
+    return fallback;
+};
 
-// YOUR STRIPE LINK
+// WICHTIG: Hier kommt der STRIPE PAYMENT LINK rein (nicht der pk_test Key).
 const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_3cI7sNcvxgT93zo1tLdEs00';
 
 export const AppProvider = ({ children }: React.PropsWithChildren) => {
+  // Load initial state from local storage or use defaults
+  const [allUsers, setAllUsers] = useState<User[]>(() => loadFromStorage('tipcredit_users', INITIAL_USERS));
+  const [requests, setRequests] = useState<TipRequest[]>(() => loadFromStorage('tipcredit_requests', []));
+  const [transactions, setTransactions] = useState<Transaction[]>(() => loadFromStorage('tipcredit_transactions', []));
+  
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>(INITIAL_USERS);
-  const [requests, setRequests] = useState<TipRequest[]>(INITIAL_REQUESTS);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // Simulate persistent login for demo
+  // Persistence Effects: Save to localStorage whenever data changes
+  useEffect(() => { localStorage.setItem('tipcredit_users', JSON.stringify(allUsers)); }, [allUsers]);
+  useEffect(() => { localStorage.setItem('tipcredit_requests', JSON.stringify(requests)); }, [requests]);
+  useEffect(() => { localStorage.setItem('tipcredit_transactions', JSON.stringify(transactions)); }, [transactions]);
+
+  // Restore session
   useEffect(() => {
     const storedUser = localStorage.getItem('tipcredit_user');
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
-      setCurrentUser(parsed);
-      // Ensure this user exists in our "DB"
-      setAllUsers(prev => {
-        if (!prev.find(u => u.id === parsed.id)) return [...prev, parsed];
-        return prev;
-      });
+      // Verify if user still exists in our memory "DB"
+      const found = allUsers.find(u => u.id === parsed.id);
+      if (found) {
+          setCurrentUser(found);
+      }
     }
-  }, []);
+  }, [allUsers]); // Re-run if allUsers loads
 
   // Update mock DB when current user changes (e.g. buys credits)
   useEffect(() => {
@@ -62,38 +75,44 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     }
   }, [currentUser]);
 
-  const login = (email: string, role: UserRole = UserRole.USER) => {
-    // Check if user exists in mock DB
-    let user = allUsers.find(u => u.email === email);
-    let userId = user ? user.id : (role === UserRole.ADMIN ? 'admin-1' : `user-${Date.now()}`);
-    
-    if (!user) {
-        user = {
-            id: userId,
-            email,
-            name: email.split('@')[0],
-            role,
-            credits: role === UserRole.ADMIN ? 999 : 0,
-        };
-        setAllUsers(prev => [...prev, user!]);
+  const validateUser = (email: string, pass: string): User | null => {
+    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (user && user.password === pass) {
+        return user;
     }
+    return null;
+  };
 
-    // --- AUTOMATIC WELCOME MESSAGE LOGIC ---
-    const hasHistory = requests.some(r => r.userId === userId);
-    
-    if (!hasHistory && role === UserRole.USER) {
-        const welcomeMsg: TipRequest = {
-            id: `welcome-${Date.now()}`,
-            userId: userId,
-            userEmail: email,
-            status: RequestStatus.CHAT,
-            createdAt: new Date().toISOString(),
-            userMessage: "Hallo! 👋 Danke für dein Interesse an TipCredit. Ich melde mich so schnell wie möglich bei dir. Wenn du Fragen hast oder direkt starten möchtest, schreib mir einfach hier.",
-            isAdmin: true 
-        };
-        setRequests(prev => [...prev, welcomeMsg]);
-    }
+  const registerUser = (email: string, pass: string): boolean => {
+      if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+          return false; // Email exists
+      }
+      const newUser: User = {
+          id: `user-${Date.now()}`,
+          email,
+          name: email.split('@')[0],
+          role: UserRole.USER,
+          credits: 0,
+          password: pass
+      };
+      setAllUsers(prev => [...prev, newUser]);
+      
+      // Send Welcome Message
+      const welcomeMsg: TipRequest = {
+        id: `welcome-${Date.now()}`,
+        userId: newUser.id,
+        userEmail: email,
+        status: RequestStatus.CHAT,
+        createdAt: new Date().toISOString(),
+        userMessage: "Hallo! 👋 Danke für dein Interesse an TipCredit. Ich melde mich so schnell wie möglich bei dir. Wenn du Fragen hast oder direkt starten möchtest, schreib mir einfach hier.",
+        isAdmin: true 
+      };
+      setRequests(prev => [...prev, welcomeMsg]);
+      
+      return true;
+  };
 
+  const login = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('tipcredit_user', JSON.stringify(user));
   };
@@ -104,7 +123,7 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   };
 
   const buyCredit = async () => {
-    // Redirect to Stripe
+    // Redirect to Stripe Payment Link
     window.location.href = STRIPE_PAYMENT_LINK;
   };
 
@@ -112,9 +131,6 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
   const handlePaymentSuccess = () => {
     if (!currentUser) return;
 
-    // Prevent duplicate transaction spam in this session (simple check)
-    // In production, backend validates the stripe session_id
-    
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       userId: currentUser.id,
@@ -125,9 +141,23 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
     };
 
     const updatedUser = { ...currentUser, credits: currentUser.credits + 1 };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('tipcredit_user', JSON.stringify(updatedUser));
+    
+    // Update State (Persistence is handled by effects)
     setTransactions(prev => [newTx, ...prev]);
+    setCurrentUser(updatedUser);
+    localStorage.setItem('tipcredit_user', JSON.stringify(updatedUser)); // Update session immediately
+
+    // Automatically add a System Message to the Chat
+    const sysMsg: TipRequest = {
+        id: `sys-pay-${Date.now()}`,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        status: RequestStatus.CHAT,
+        createdAt: new Date().toISOString(),
+        userMessage: "✅ Zahlung erfolgreich! 1 Credit wurde gutgeschrieben.",
+        isAdmin: true 
+    };
+    setRequests(prev => [...prev, sysMsg]);
   };
 
   const sendUserMessage = async (message: string, isPaidRequest: boolean) => {
@@ -217,7 +247,9 @@ export const AppProvider = ({ children }: React.PropsWithChildren) => {
       requests, 
       transactions, 
       login, 
-      logout, 
+      logout,
+      validateUser,
+      registerUser, 
       buyCredit, 
       handlePaymentSuccess,
       sendUserMessage,

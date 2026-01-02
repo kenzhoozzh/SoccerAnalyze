@@ -12,6 +12,9 @@ const Dashboard = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to prevent double processing in Strict Mode
+  const paymentProcessed = useRef(false);
 
   const userRequests = requests.filter(r => r.userId === currentUser?.id);
   // Sort oldest to newest for Chat flow
@@ -27,13 +30,14 @@ const Dashboard = () => {
   // Check for Payment Success from Stripe Redirect
   useEffect(() => {
     if (searchParams.get('payment') === 'success') {
-        handlePaymentSuccess();
-        // Send a confirmation system message
-        sendSystemResponse("✅ Zahlung erfolgreich! 1 Credit wurde gutgeschrieben.");
+        if (!paymentProcessed.current) {
+            handlePaymentSuccess();
+            paymentProcessed.current = true;
+        }
         // Remove query param to prevent refresh-abuse
         setSearchParams({});
     }
-  }, [searchParams, handlePaymentSuccess, setSearchParams, sendSystemResponse]);
+  }, [searchParams, handlePaymentSuccess, setSearchParams]);
 
   const handleBuy = async () => {
     if(!confirm("Du wirst nun zu Stripe weitergeleitet, um 1 Credit (500 CHF) sicher zu kaufen.")) return;

@@ -14,6 +14,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  password?: string; // Added for mock auth validation
   role: UserRole;
   credits: number;
 }
